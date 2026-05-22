@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h3 class="mb-4">📊 Welcome back, {{ current_user.username }}!</h3>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center summary-card">
+            <div class="card-body">
+                <div class="summary-icon">📝</div>
+                <h2 class="summary-number">{{ total }}</h2>
+                <p class="summary-label">Total Entries</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center summary-card positive-card">
+            <div class="card-body">
+                <div class="summary-icon">😊</div>
+                <h2 class="summary-number text-success">{{ positive }}</h2>
+                <p class="summary-label">Positive</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center summary-card negative-card">
+            <div class="card-body">
+                <div class="summary-icon">😞</div>
+                <h2 class="summary-number text-danger">{{ negative }}</h2>
+                <p class="summary-label">Negative</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center summary-card neutral-card">
+            <div class="card-body">
+                <div class="summary-icon">😐</div>
+                <h2 class="summary-number text-warning">{{ neutral }}</h2>
+                <p class="summary-label">Neutral</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-body">
+                <h5 class="card-title">Mood Over Time</h5>
+                <canvas id="moodChart" height="120"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow">
+            <div class="card-body">
+                <h5 class="card-title">Mood Breakdown</h5>
+                <canvas id="breakdownChart" height="120"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Date Filter -->
+<div class="card shadow mb-4">
+    <div class="card-body">
+        <h5 class="card-title">🔍 Filter Entries by Date</h5>
+        <div class="row align-items-end">
+            <div class="col-md-4">
+                <label class="form-label">From Date</label>
+                <input type="date" id="fromDate" class="form-control" onchange="filterEntries()">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">To Date</label>
+                <input type="date" id="toDate" class="form-control" onchange="filterEntries()">
+            </div>
+            <div class="col-md-4">
+                <button class="btn btn-secondary w-100" onclick="clearFilter()">Clear Filter</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Mood Entries Table -->
+<div class="card shadow">
+    <div class="card-body">
+        <h5 class="card-title">Your Mood Entries</h5>
+        {% if entries %}
+            <table class="table table-striped mt-3">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Entry</th>
+                        <th>Sentiment</th>
+                        <th>Score</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in entries %}
+                    <tr class="entry-row" data-date="{{ entry['created_at'].strftime('%Y-%m-%d') }}">
+                        <td>{{ entry['created_at'].strftime('%d %b %Y') }}</td>
+                        <td>{{ entry['entry_text'][:80] }}...</td>
+                        <td>
+                            {% if entry['sentiment_label'] == 'Positive' %}
+                                <span class="badge bg-success">😊 Positive</span>
+                            {% elif entry['sentiment_label'] == 'Negative' %}
+                                <span class="badge bg-danger">😞 Negative</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">😐 Neutral</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ entry['sentiment_score'] }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p class="text-muted mt-3">No mood entries yet. <a href="{{ url_for('mood.entry') }}">Add your first one!</a></p>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    window.addEventListener('load', function() {
+        const labels = [{% for entry in entries|reverse %}"{{ entry['created_at'].strftime('%d %b') }}"{% if not loop.last %},{% endif %}{% endfor %}];
+        const scores = [{% for entry in entries|reverse %}{{ entry['sentiment_score'] }}{% if not loop.last %},{% endif %}{% endfor %}];
+        renderMoodChart(labels, scores);
+        renderBreakdownChart({{ positive }}, {{ negative }}, {{ neutral }});
+    });
+</script>
+
+{% endblock %}
